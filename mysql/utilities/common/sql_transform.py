@@ -914,6 +914,9 @@ class SQLTransformer(object):
         index_clauses = []
 
         if rows != []:
+            rows = list(rows)
+            # Sort index def rows by key_name and seq_in_index
+            rows = sorted(rows, key=lambda r: (r[2], r[3]))
             pri_key_cols = []
             unique_indexes = []
             unique_key_cols = []
@@ -1008,13 +1011,13 @@ class SQLTransformer(object):
             return ([], [])
 
         # Generate DROP index clauses
-        drop_idx_recorded = []  # used to avoid duplicate index drops
-        for index in drop_idx:
-            if index[2] == "PRIMARY":
+        # Remove duplicate index keyname to avoid duplicate drop statements
+        drop_idx_keynames = set([r[2] for r in drop_idx])
+        for idx_key in drop_idx_keynames:
+            if idx_key == "PRIMARY":
                 drop_indexes.append("  DROP PRIMARY KEY")
-            elif index[2] not in drop_idx_recorded:
-                drop_indexes.append("  DROP INDEX %s" % index[2])
-                drop_idx_recorded.append(index[2])
+            else:
+                drop_indexes.append("  DROP INDEX %s" % idx_key)
 
         # Generate ADD index clauses
         if len(add_idx) > 0:
